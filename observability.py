@@ -4,6 +4,7 @@ Call init_observability("<agent-name>") once at startup. Every LLM call wrapped
 in ``@traced`` (or manually with ``tracer.start_as_current_span``) is then visible
 in Langfuse with cost, latency, prompt, and completion.
 """
+
 import os
 from opentelemetry import trace
 from opentelemetry.sdk.resources import Resource
@@ -32,9 +33,7 @@ def init_observability(service_name: str) -> trace.Tracer:
         encoded = _b64.b64encode(creds.encode()).decode()
         headers["Authorization"] = "Basic " + encoded
 
-    provider = TracerProvider(
-        resource=Resource.create({"service.name": service_name})
-    )
+    provider = TracerProvider(resource=Resource.create({"service.name": service_name}))
     exporter = OTLPSpanExporter(endpoint=endpoint, headers=headers)
     provider.add_span_processor(BatchSpanProcessor(exporter))
     trace.set_tracer_provider(provider)
