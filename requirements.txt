@@ -9,3 +9,4 @@ python-dotenv
 APScheduler
 pandas
 pytz
+sentry-sdk[asyncio]>=2.0
