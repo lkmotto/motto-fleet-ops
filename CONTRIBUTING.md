@@ -34,6 +34,19 @@ Common `<type>` values:
 | `chore`    | Maintenance work without user impact                       | No                |
 | `revert`   | Revert of a previous commit                                | Yes (patch)       |
 
+## Pre-commit Hooks
+
+This repository uses [pre-commit](https://pre-commit.com/) to run linting and
+security checks before each commit. To install:
+
+```bash
+pip install pre-commit && pre-commit install
+```
+
+The hooks configured are: trailing whitespace fixes, end-of-file fixes, YAML
+validation, large-file checks, merge-conflict detection, private-key detection,
+and [gitleaks](https://github.com/gitleaks/gitleaks) for secret scanning.
+
 Breaking changes are signaled by appending `!` after the type/scope
 (e.g. `feat!: drop Python 3.8 support`) or by including a
 `BREAKING CHANGE:` footer; both trigger a major release.
