@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 """Parse a provision request from one of three triggers and emit GITHUB_OUTPUT lines."""
+import sys as _sys, pathlib as _pathlib  # noqa: E402
+_sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parent.parent))
+import sentry_init  # noqa: E402,F401
+
 import json
 import os
 import re
@@ -92,4 +96,10 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    import sentry_sdk as _sentry_sdk
+    try:
+        sys.exit(main())
+    except Exception as _exc:
+        _sentry_sdk.capture_exception(_exc)
+        raise
+
