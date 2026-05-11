@@ -1,4 +1,4 @@
-```python
+```python  # noqa: C901
 """
 Core agent.py for motto-fleet-burn-rate-tracker Maritime agent.
 Executes daily fleet cost aggregation, burn rate analysis, and reporting.
@@ -232,4 +232,4 @@ Respond with JSON containing:
             df = self._safe_api_call(0.5, self._query_previous_day_costs)
             
             # 2. Aggregate costs
-            summary = self._safe_api_call(0.5, self._aggregate
+            summary = self._safe_api_call(0.5, self._aggregate  # noqa: C901
