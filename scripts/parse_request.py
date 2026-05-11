@@ -1,6 +1,9 @@
 #!/usr/bin/env python3
 """Parse a provision request from one of three triggers and emit GITHUB_OUTPUT lines."""
-import sys as _sys, pathlib as _pathlib  # noqa: E402
+
+import pathlib as _pathlib
+import sys as _sys  # noqa: E402
+
 _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parent.parent))
 import sentry_init  # noqa: E402,F401
 
@@ -54,7 +57,11 @@ def main() -> int:
 
     if event == "workflow_dispatch":
         target_repo = os.environ.get("INPUT_TARGET", "").strip()
-        secret_names = [s.strip() for s in os.environ.get("INPUT_SECRETS", "").split(",") if s.strip()]
+        secret_names = [
+            s.strip()
+            for s in os.environ.get("INPUT_SECRETS", "").split(",")
+            if s.strip()
+        ]
         reason = os.environ.get("INPUT_REASON", "manual dispatch")
 
     elif event == "repository_dispatch":
@@ -83,7 +90,9 @@ def main() -> int:
         secret_names, reason = parse_body(body)
 
     if not target_repo or not secret_names:
-        sys.stderr.write(f"could not parse request: target_repo={target_repo!r} secrets={secret_names!r}\n")
+        sys.stderr.write(
+            f"could not parse request: target_repo={target_repo!r} secrets={secret_names!r}\n"
+        )
         sys.exit(1)
 
     emit("request_id", request_id)
@@ -97,9 +106,9 @@ def main() -> int:
 
 if __name__ == "__main__":
     import sentry_sdk as _sentry_sdk
+
     try:
         sys.exit(main())
     except Exception as _exc:
         _sentry_sdk.capture_exception(_exc)
         raise
-

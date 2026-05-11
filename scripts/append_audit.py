@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Append a single JSON line to audit/provision-log.jsonl."""
+
 import json
 import os
 import pathlib
