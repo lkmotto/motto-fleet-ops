@@ -28,7 +28,7 @@ Python agent that calls the `motto-finance-tracker` REST API (on Render) and Sup
 | Variable | Purpose | Source |
 |---|---|---|
 | `SUPABASE_URL` | Supabase project URL for cost data | Doppler `motto-core/prd` |
-| `SUPABASE_KEY` | Supabase service role key | Doppler `motto-core/prd` |
+| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key | Doppler `motto-core/prd` |
 | `MOTTO_FINANCE_API_URL` | `motto-finance-tracker` REST API base URL (default: `https://motto-finance-tracker.onrender.com/api`) | Northflank env |
 | `MOTTO_FINANCE_API_KEY` | Auth key for finance tracker API | Doppler `motto-core/prd` |
 | `OPENAI_API_KEY` | LangChain/OpenAI for burn rate analysis | Doppler `motto-core/prd` |

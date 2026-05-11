@@ -45,7 +45,7 @@ logger = logging.getLogger(__name__)
 # Environment variables with validation
 MAX_COST_PER_RUN = float(os.getenv("MAX_COST_PER_RUN", "5.0"))
 SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+SUPABASE_SERVICE_ROLE_KEY = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
 MOTTO_FINANCE_API_URL = os.getenv("MOTTO_FINANCE_API_URL", "https://motto-finance-tracker.onrender.com/api")
 MOTTO_FINANCE_API_KEY = os.getenv("MOTTO_FINANCE_API_KEY")
 OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
@@ -55,10 +55,10 @@ class MaritimeFleetAgent:
     """Core maritime fleet burn rate tracking agent."""
     
     def __init__(self):
-        if not all([SUPABASE_URL, SUPABASE_KEY, MOTTO_FINANCE_API_KEY, OPENAI_API_KEY]):
+        if not all([SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY, MOTTO_FINANCE_API_KEY, OPENAI_API_KEY]):
             raise ValueError("Missing required environment variables")
         
-        self.supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+        self.supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
         self.llm = ChatOpenAI(api_key=OPENAI_API_KEY, model="gpt-4o-mini", temperature=0.1)
         self.cost_tracker = 0.0
         self.utc = pytz.UTC
