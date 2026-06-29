@@ -6,6 +6,7 @@ import sys as _sys  # noqa: E402
 
 _sys.path.insert(0, str(_pathlib.Path(__file__).resolve().parent.parent))
 from motto_common.sentry_init import init_sentry  # was: import sentry_init
+
 init_sentry(agent_name="motto-fleet-provisioner")
 
 import json

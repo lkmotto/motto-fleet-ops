@@ -1,0 +1,15 @@
+README.md
+pyproject.toml
+burn-rate/observability.py
+burn-rate/agent/__init__.py
+burn-rate/agent/agent.py
+motto_fleet_ops.egg-info/PKG-INFO
+motto_fleet_ops.egg-info/SOURCES.txt
+motto_fleet_ops.egg-info/dependency_links.txt
+motto_fleet_ops.egg-info/requires.txt
+motto_fleet_ops.egg-info/top_level.txt
+provisioner/scripts/append_audit.py
+provisioner/scripts/parse_request.py
+tests/test_agent.py
+tests/test_observability.py
+tests/test_provisioner.py
