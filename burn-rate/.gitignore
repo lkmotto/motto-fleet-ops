@@ -1,0 +1,10 @@
+__pycache__/
+*.pyc
+.env
+.env.*
+!.env.example
+/state/*
+!/state/.gitkeep
+/logs/
+/secrets/
+.DS_Store
