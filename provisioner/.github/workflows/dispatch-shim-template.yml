@@ -1,0 +1,64 @@
+# INSTALL THIS FILE AT .github/workflows/provision-dispatch.yml IN EACH motto-* REPO.
+# It listens for [provision] issues in the local repo and fires a repository_dispatch
+# at lkmotto/motto-fleet-provisioner so the central provisioner can grant secrets.
+#
+# Required: a repo secret FLEET_DISPATCH_PAT with `repo` scope on motto-fleet-provisioner.
+name: provision-dispatch
+on:
+  issues:
+    types: [opened, edited]
+jobs:
+  forward:
+    if: startsWith(github.event.issue.title, '[provision]')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Forward to fleet-provisioner
+        env:
+          GH_TOKEN: ${{ secrets.FLEET_DISPATCH_PAT }}
+        run: |
+          # Build payload from issue body
+          python3 - <<'PY'
+          import json, os, re, subprocess, sys
+          body = """${{ github.event.issue.body }}"""
+          title = """${{ github.event.issue.title }}"""
+          repo = """${{ github.event.repository.full_name }}"""
+          number = ${{ github.event.issue.number }}
+
+          secrets = []
+          reason = ""
+          in_s = False
+          for line in body.splitlines():
+              s = line.strip()
+              if s.lower().startswith("secrets:"):
+                  in_s = True; continue
+              if s.lower().startswith("reason:"):
+                  in_s = False; reason = s.split(":",1)[1].strip(); continue
+              if in_s:
+                  m = re.match(r"^-\s*([A-Za-z0-9_]+)\s*$", s)
+                  if m: secrets.append(m.group(1))
+
+          # Target repo defaults to the originating repo unless title overrides
+          target = repo
+          m = re.match(r"^\[provision\]\s+(\S+)", title)
+          if m and "/" in m.group(1):
+              target = m.group(1)
+          elif m:
+              target = f"lkmotto/{m.group(1)}"
+
+          payload = {
+              "event_type": "provision-request",
+              "client_payload": {
+                  "target_repo": target,
+                  "secrets": secrets,
+                  "reason": reason,
+                  "issue_repo": repo,
+                  "issue_number": number,
+              }
+          }
+          subprocess.run(
+              ["gh","api","-X","POST","/repos/lkmotto/motto-fleet-provisioner/dispatches",
+               "-f", f"event_type={payload['event_type']}",
+               "--input","-"],
+              input=json.dumps(payload), text=True, check=True
+          )
+          PY

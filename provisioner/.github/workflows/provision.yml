@@ -1,0 +1,108 @@
+name: provision
+
+on:
+  issues:
+    types: [opened, edited]
+  repository_dispatch:
+    types: [provision-request]
+  workflow_dispatch:
+    inputs:
+      target_repo:
+        description: 'Target repo (lkmotto/motto-X)'
+        required: true
+      secrets_csv:
+        description: 'Comma-separated secret names'
+        required: true
+      reason:
+        description: 'Why'
+        required: false
+        default: 'manual dispatch'
+
+jobs:
+  provision:
+    if: |
+      (github.event_name == 'workflow_dispatch') ||
+      (github.event_name == 'repository_dispatch') ||
+      (github.event_name == 'issues' && startsWith(github.event.issue.title, '[provision]'))
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install Doppler CLI
+        run: |
+          curl -Ls --tlsv1.2 --proto "=https" --retry 3 https://cli.doppler.com/install.sh | sudo sh
+
+      - name: Install GitHub CLI
+        run: |
+          gh --version || (sudo apt-get update && sudo apt-get install -y gh)
+
+      - name: Parse request
+        id: parse
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_REPO: ${{ github.event.repository.full_name }}
+          DISPATCH_PAYLOAD: ${{ toJson(github.event.client_payload) }}
+          INPUT_TARGET: ${{ inputs.target_repo }}
+          INPUT_SECRETS: ${{ inputs.secrets_csv }}
+          INPUT_REASON: ${{ inputs.reason }}
+        run: |
+          python3 scripts/parse_request.py >> "$GITHUB_OUTPUT"
+
+      - name: Grant secrets
+        id: grant
+        env:
+          DOPPLER_TOKEN: ${{ secrets.DOPPLER_TOKEN }}
+          GH_TOKEN: ${{ secrets.FLEET_PROVISION_PAT }}
+          TARGET_REPO: ${{ steps.parse.outputs.target_repo }}
+          SECRET_NAMES: ${{ steps.parse.outputs.secret_names }}
+          REQUEST_ID: ${{ steps.parse.outputs.request_id }}
+        run: |
+          bash scripts/grant_secrets.sh
+
+      - name: Append audit log
+        if: always()
+        env:
+          REQUEST_ID: ${{ steps.parse.outputs.request_id }}
+          TARGET_REPO: ${{ steps.parse.outputs.target_repo }}
+          SECRET_NAMES: ${{ steps.parse.outputs.secret_names }}
+          REASON: ${{ steps.parse.outputs.reason }}
+          GRANTED: ${{ steps.grant.outputs.granted }}
+          MISSING: ${{ steps.grant.outputs.missing }}
+          STATUS: ${{ job.status }}
+        run: |
+          python3 scripts/append_audit.py
+          git config user.name "fleet-provisioner"
+          git config user.email "provisioner@motto.local"
+          git add audit/provision-log.jsonl
+          git diff --cached --quiet || git commit -m "audit: ${REQUEST_ID}"
+          git push origin HEAD:main || echo "audit push failed (non-fatal)"
+
+      - name: Comment on requesting issue
+        if: github.event_name == 'issues' || github.event_name == 'repository_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.FLEET_PROVISION_PAT }}
+          ISSUE_REPO: ${{ steps.parse.outputs.issue_repo }}
+          ISSUE_NUMBER: ${{ steps.parse.outputs.issue_number }}
+          GRANTED: ${{ steps.grant.outputs.granted }}
+          MISSING: ${{ steps.grant.outputs.missing }}
+          TARGET_REPO: ${{ steps.parse.outputs.target_repo }}
+        run: |
+          bash scripts/comment_back.sh
+
+      - name: Discord ping
+        if: always() && env.WEBHOOK != ''
+        env:
+          WEBHOOK: ${{ secrets.FLEET_PROVISION_WEBHOOK }}
+          REQUEST_ID: ${{ steps.parse.outputs.request_id }}
+          TARGET_REPO: ${{ steps.parse.outputs.target_repo }}
+          GRANTED: ${{ steps.grant.outputs.granted }}
+          STATUS: ${{ job.status }}
+        run: |
+          curl -s -X POST "$WEBHOOK" -H 'Content-Type: application/json' \
+            -d "{\"content\":\"\\u26a1 fleet-provisioner: ${STATUS} \\u2014 ${TARGET_REPO} \\u2192 ${GRANTED} (req ${REQUEST_ID})\"}" || true
